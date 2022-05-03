@@ -6,7 +6,5 @@ in this repository, you will find the scripts and programm that I have developpe
 Here is the current list of files:
 ----------------------------------
 
--CVE-2022-22204:
-    a python script to embed reverse shell payloads in images
--Text_To_Image:
-    another python script with similar intents but this time the payload is on the image itself (to exploit vulnerabilities in image to text applications)
+-CVE-2022-22204: a python script to embed reverse shell payloads in images
+-Text_To_Image: another python script with similar intents but this time the payload is on the image itself (to exploit vulnerabilities in image to text applications)
