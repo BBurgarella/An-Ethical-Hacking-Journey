@@ -194,16 +194,17 @@ if __name__ =="__main__":
                         interpreted_payload = interpreted_payload.strip().replace("\n","")
                         try:
                             # I need the try and except here because sometimes, the interpreted payload is longer than the payload
-                            list = [bcolors.GREEN + interpreted_payload[i] +bcolors.ENDC if interpreted_payload[i]==fuzzed_payload[i] else bcolors.BLUE + interpreted_payload[i] + bcolors.ENDC for i in range(len(interpreted_payload))]
-                            print("[+] calibration: {:.2f}%, {}                                                   ".strip().format(100*i/(len(lines)*len(fuzzlist)),''.join(list)), end='\r')
+                            list = [bcolors.GREEN + interpreted_payload[i] +bcolors.ENDC if interpreted_payload[i]==fuzzed_payload[i] else bcolors.FAIL + "X" + bcolors.ENDC for i in range(len(interpreted_payload))]
+                            print("[+] calibration: {:.2f}%, {}                                                                             ".strip().format(100*i/(len(lines)*len(fuzzlist)),''.join(list)), end='\r')
                         except:
-                            if interpreted_payload == payload:
-                                print("[+] calibration: {:.2f}%, {}                                                   ".strip().format(100*i/len(lines),''.join(list)))
-                                print("Found a match with font: {}".format(line))
-                                img.save('OutputFileName')
-                                quit()
+                            pass
+                        if interpreted_payload == fuzzed_payload:
+                            print("[+] calibration: {:.2f}%, {}                                                              ".strip().format(100*i/len(lines),''.join(list)))
+                            print("Found a match with font: {}".format(line))
+                            img.save('OutputFileName','jpg')
+                            quit()
                     i+=1
 
     else:
         img = Generate_image(payload, font)
-        img.save('OutputFileName')
+        img.save('OutputFileName','jpg')
