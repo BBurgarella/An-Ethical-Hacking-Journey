@@ -113,7 +113,7 @@ def Parse_args():
 
     return IP, Port, OutputFileName, payload_file, font_choice, b64_bool, isfontaList, fuzzlist
 
-def Generate_image(payload, font, character_wideness_pix=30, height=75, Fontsize=40, strokeWidth=2):
+def Generate_image(payload, font, character_wideness_pix=30, height=75, Fontsize=40, strokeWidth=1):
     """Generates the image in pillow format (no disk I/O to gain time)
 
     this function generates the image in pillow format, the kwargs were determined via a 
@@ -194,17 +194,17 @@ if __name__ =="__main__":
                         interpreted_payload = interpreted_payload.strip().replace("\n","")
                         try:
                             # I need the try and except here because sometimes, the interpreted payload is longer than the payload
-                            list = [bcolors.GREEN + interpreted_payload[i] +bcolors.ENDC if interpreted_payload[i]==fuzzed_payload[i] else bcolors.FAIL + "X" + bcolors.ENDC for i in range(len(interpreted_payload))]
+                            list = [bcolors.BLUE + interpreted_payload[i] +bcolors.ENDC if interpreted_payload[i]==fuzzed_payload[i] else bcolors.FAIL + "X" + bcolors.ENDC for i in range(len(interpreted_payload))]
                             print("[+] calibration: {:.2f}%, {}                                                                             ".strip().format(100*i/(len(lines)*len(fuzzlist)),''.join(list)), end='\r')
                         except:
                             pass
                         if interpreted_payload == fuzzed_payload:
                             print("[+] calibration: {:.2f}%, {}                                                              ".strip().format(100*i/len(lines),''.join(list)))
                             print("Found a match with font: {}".format(line))
-                            img.save('OutputFileName','jpg')
+                            img.save(OutputFileName,format='JPEG')
                             quit()
                     i+=1
 
     else:
         img = Generate_image(payload, font)
-        img.save('OutputFileName','jpg')
+        img.save(OutputFileName, format='JPEG')

